@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Revaluation Requests - ExamPro{% endblock %}
+{% block page_title %}Revaluations{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Submit Revaluation Form Card -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="card-title mb-0 fw-bold text-primary">
+                <i class="fas fa-rotate me-2"></i>Submit Revaluation Request
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="POST" action="{{ url_for('revaluations') }}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="registration_id" class="form-label fw-semibold">Graded Registration <span class="text-danger">*</span></label>
+                        <select class="form-select" id="registration_id" name="registration_id" required {% if not registrations_with_marks %}disabled{% endif %}>
+                            {% if registrations_with_marks %}
+                                <option value="" disabled selected>Select Graded Course Registration</option>
+                                {% for reg in registrations_with_marks %}
+                                <option value="{{ reg.registration_id }}">
+                                    {{ reg.roll_number }} - {{ reg.name or reg.student_name }} | {{ reg.course_code }} | Marks: {{ reg.marks_obtained }}
+                                </option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="" disabled selected>No graded registrations available</option>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="reason" class="form-label fw-semibold">Reason for Revaluation <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="reason" name="reason" rows="3" placeholder="Reason for revaluation (e.g., calculation discrepancy, missing answer script evaluation)..." required {% if not registrations_with_marks %}disabled{% endif %}></textarea>
+                    </div>
+
+                    <div class="col-12 mt-3">
+                        <button type="submit" class="btn btn-primary px-4" {% if not registrations_with_marks %}disabled{% endif %}>
+                            <i class="fas fa-paper-plane me-1"></i> Submit Request
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Revaluation Requests Table Card -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="fas fa-list-check me-2"></i>All Revaluation Requests
+            </h5>
+            <span class="badge bg-primary rounded-pill px-3 py-2">
+                {{ requests|length if requests else 0 }} Total
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="ps-3" style="width: 45px;">#</th>
+                            <th scope="col">Student</th>
+                            <th scope="col">Course</th>
+                            <th scope="col">Session</th>
+                            <th scope="col" class="text-center">Original Marks</th>
+                            <th scope="col" class="text-center">New Marks</th>
+                            <th scope="col" style="min-width: 180px;">Reason</th>
+                            <th scope="col" class="text-center" style="width: 110px;">Status</th>
+                            <th scope="col" style="width: 120px;">Requested Date</th>
+                            <th scope="col" class="pe-3" style="min-width: 190px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if requests %}
+                            {% for r in requests %}
+                            <tr>
+                                <td class="ps-3 fw-bold text-muted">{{ loop.index }}</td>
+                                <td>
+                                    <div class="fw-semibold text-dark">{{ r.student_name or r.name }}</div>
+                                    <span class="badge bg-light text-primary border font-monospace">{{ r.roll_number }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ r.course_code }}</span>
+                                    <small class="text-muted d-block">{{ r.course_name }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ r.session_name }}</span>
+                                </td>
+                                <td class="text-center fw-bold text-secondary">
+                                    {{ r.original_marks if r.original_marks is not none else '-' }}
+                                </td>
+                                <td class="text-center fw-bold {% if r.new_marks is not none %}text-success{% else %}text-muted{% endif %}">
+                                    {{ r.new_marks if r.new_marks is not none else '-' }}
+                                </td>
+                                <td>
+                                    <small class="text-dark">{{ r.reason }}</small>
+                                </td>
+                                <td class="text-center">
+                                    {% if r.status == 'PENDING' %}
+                                        <span class="badge bg-warning text-dark px-3 py-1">
+                                            <i class="fas fa-hourglass-half me-1"></i>PENDING
+                                        </span>
+                                    {% elif r.status == 'APPROVED' %}
+                                        <span class="badge bg-success px-3 py-1">
+                                            <i class="fas fa-check-circle me-1"></i>APPROVED
+                                        </span>
+                                    {% elif r.status == 'REJECTED' %}
+                                        <span class="badge bg-danger px-3 py-1">
+                                            <i class="fas fa-times-circle me-1"></i>REJECTED
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary px-3 py-1">{{ r.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted small">
+                                    <i class="far fa-calendar me-1"></i>{{ r.requested_date }}
+                                </td>
+                                <td class="pe-3">
+                                    {% if r.status == 'PENDING' %}
+                                        <div class="d-flex flex-column gap-2">
+                                            <!-- Approve Form with New Marks -->
+                                            <form method="POST" action="{{ url_for('approve_revaluation', id=r.request_id) }}" class="d-flex gap-1 align-items-center">
+                                                <input type="number" step="0.01" min="0" max="100" name="new_marks" class="form-control form-control-sm" placeholder="New Marks" style="width: 90px;" required>
+                                                <button type="submit" class="btn btn-sm btn-success text-nowrap" title="Approve and update marks">
+                                                    <i class="fas fa-check"></i> Approve
+                                                </button>
+                                            </form>
+                                            <!-- Reject Form -->
+                                            <form method="POST" action="{{ url_for('reject_revaluation', id=r.request_id) }}" onsubmit="return confirm('Are you sure you want to reject this revaluation request?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger w-100" title="Reject request">
+                                                    <i class="fas fa-times"></i> Reject
+                                                </button>
+                                            </form>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-muted small">
+                                            <i class="fas fa-lock me-1"></i>Resolved
+                                            {% if r.resolved_date %}
+                                                <div class="text-secondary small">{{ r.resolved_date }}</div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="10" class="text-center py-5 text-muted">
+                                    <i class="fas fa-rotate fa-3x mb-3 text-secondary d-block"></i>
+                                    <h6 class="fw-bold">No revaluation requests found</h6>
+                                    <p class="small mb-0">Students can submit revaluation requests using the form above.</p>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Results - ExamPro{% endblock %}
+{% block page_title %}Results Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Filter and Action Bar Card -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="fas fa-sliders me-2 text-primary"></i>Results Control Center
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4 align-items-end">
+                <!-- 1. Filter by Session (GET) -->
+                <div class="col-lg-4 col-md-12 border-end-lg pe-lg-4">
+                    <form method="GET" action="{{ url_for('results') }}">
+                        <label for="filter_session_id" class="form-label fw-semibold text-secondary">
+                            <i class="fas fa-filter me-1 text-primary"></i>Filter by Exam Session
+                        </label>
+                        <div class="input-group">
+                            <select class="form-select" id="filter_session_id" name="session_id">
+                                <option value="">All Sessions</option>
+                                {% for s in sessions %}
+                                <option value="{{ s.session_id }}" {% if request.args.get('session_id') == s.session_id|string %}selected{% endif %}>
+                                    {{ s.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-primary px-3">
+                                <i class="fas fa-search me-1"></i> Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 2. Compute Results (POST) -->
+                <div class="col-lg-4 col-md-12 border-end-lg pe-lg-4">
+                    <form method="POST" action="{{ url_for('compute_results') }}">
+                        <label for="compute_session_id" class="form-label fw-semibold text-secondary">
+                            <i class="fas fa-calculator me-1 text-success"></i>Compute Grades
+                        </label>
+                        <div class="input-group">
+                            <select class="form-select" id="compute_session_id" name="session_id" required>
+                                <option value="" disabled selected>Select Session</option>
+                                {% for s in sessions %}
+                                <option value="{{ s.session_id }}">{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-success px-3">
+                                <i class="fas fa-cog me-1"></i> Compute Grades
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 3. Publish Results (POST) -->
+                <div class="col-lg-4 col-md-12">
+                    <form method="POST" action="{{ url_for('publish_results') }}" onsubmit="return confirm('Are you sure you want to publish results for the selected session? Published results will be finalized.');">
+                        <label for="publish_session_id" class="form-label fw-semibold text-secondary">
+                            <i class="fas fa-bullhorn me-1 text-warning"></i>Publish Results
+                        </label>
+                        <div class="input-group">
+                            <select class="form-select" id="publish_session_id" name="session_id" required>
+                                <option value="" disabled selected>Select Session</option>
+                                {% for s in sessions %}
+                                <option value="{{ s.session_id }}">{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-warning px-3 text-dark fw-semibold">
+                                <i class="fas fa-upload me-1"></i> Publish Results
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table Card -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="fas fa-chart-column me-2 text-primary"></i>Computed Results
+            </h5>
+            <span class="badge bg-primary rounded-pill px-3 py-2">
+                {{ results|length if results else 0 }} Total
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="ps-4" style="width: 50px;">#</th>
+                            <th scope="col">Roll Number</th>
+                            <th scope="col">Student Name</th>
+                            <th scope="col">Course Code</th>
+                            <th scope="col">Course Name</th>
+                            <th scope="col">Session</th>
+                            <th scope="col" class="text-center" style="width: 100px;">Grade</th>
+                            <th scope="col" class="text-center" style="width: 110px;">Grade Point</th>
+                            <th scope="col" class="text-center pe-4" style="width: 120px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if results %}
+                            {% for r in results %}
+                            <tr>
+                                <td class="ps-4 fw-bold text-muted">{{ loop.index }}</td>
+                                <td>
+                                    <span class="badge bg-light text-primary border font-monospace">{{ r.roll_number }}</span>
+                                </td>
+                                <td class="fw-semibold text-dark">{{ r.student_name }}</td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ r.course_code }}</span>
+                                </td>
+                                <td>{{ r.course_name }}</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ r.session_name }}</span>
+                                </td>
+                                <td class="text-center">
+                                    {% if r.grade in ['O', 'A+'] %}
+                                        <span class="badge bg-success px-3 py-1 fs-6 fw-bold">{{ r.grade }}</span>
+                                    {% elif r.grade in ['A', 'B+'] %}
+                                        <span class="badge bg-primary px-3 py-1 fs-6 fw-bold">{{ r.grade }}</span>
+                                    {% elif r.grade in ['B', 'C'] %}
+                                        <span class="badge bg-warning text-dark px-3 py-1 fs-6 fw-bold">{{ r.grade }}</span>
+                                    {% elif r.grade == 'F' %}
+                                        <span class="badge bg-danger px-3 py-1 fs-6 fw-bold">{{ r.grade }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary px-3 py-1 fs-6 fw-bold">{{ r.grade }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info-subtle text-info-emphasis px-2 py-1 font-monospace">
+                                        {{ r.grade_point }}
+                                    </span>
+                                </td>
+                                <td class="text-center pe-4">
+                                    {% if r.is_published %}
+                                        <span class="badge bg-success-subtle text-success border border-success px-3 py-1">
+                                            <i class="fas fa-check-circle me-1"></i>Published
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-3 py-1">
+                                            <i class="fas fa-clock me-1"></i>Draft
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5 text-muted">
+                                    <i class="fas fa-clipboard-question fa-3x mb-3 text-secondary d-block"></i>
+                                    <h6 class="fw-bold">No results found</h6>
+                                    <p class="small mb-0">Use the "Compute Grades" tool above to evaluate student marks against grade rules.</p>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block title %}Hall Tickets - ExamPro{% endblock %}
+{% block page_title %}Hall Tickets{% endblock %}
+
+{% block extra_head %}
+<style>
+@media print {
+    .sidebar, .top-bar, .filter-card, .no-print, .alert {
+        display: none !important;
+    }
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+    }
+    .content-area {
+        padding: 0 !important;
+    }
+    .hall-ticket-card {
+        border: 2px solid #333 !important;
+        box-shadow: none !important;
+        margin: 0 0 20px 0 !important;
+        page-break-after: always;
+        break-after: page;
+    }
+    .hall-ticket-header {
+        background-color: #f8f9fa !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .table th {
+        background-color: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+.hall-ticket-card {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    background: #fff;
+}
+.hall-ticket-watermark {
+    position: relative;
+    overflow: hidden;
+}
+.ticket-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #6c757d;
+}
+.ticket-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #212529;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Filter Card -->
+    <div class="card shadow-sm border-0 mb-4 filter-card no-print">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="card-title mb-0 fw-bold text-primary">
+                <i class="fas fa-id-card-clip me-2"></i>Generate Hall Tickets
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="GET" action="{{ url_for('hall_tickets') }}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label for="session_id" class="form-label fw-semibold">Exam Session <span class="text-danger">*</span></label>
+                        <select class="form-select" id="session_id" name="session_id" required>
+                            <option value="" disabled selected>Select Exam Session</option>
+                            {% for s in sessions %}
+                            <option value="{{ s.session_id }}" {% if request.args.get('session_id') == s.session_id|string %}selected{% endif %}>
+                                {{ s.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-5">
+                        <label for="student_id" class="form-label fw-semibold">Student (Optional)</label>
+                        <select class="form-select" id="student_id" name="student_id">
+                            <option value="">All Students</option>
+                            {% for st in students %}
+                            <option value="{{ st.student_id }}" {% if request.args.get('student_id') == st.student_id|string %}selected{% endif %}>
+                                {{ st.roll_number }} - {{ st.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="fas fa-file-export me-1"></i> Generate
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tickets Display Section -->
+    {% if tickets is defined and tickets %}
+        <!-- Top Toolbar for Printing -->
+        <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+            <div>
+                <span class="fw-bold text-dark fs-5">Generated Tickets</span>
+                <span class="badge bg-primary ms-2">{{ (tickets|groupby('roll_number'))|list|length }} Students</span>
+            </div>
+            <button onclick="window.print()" class="btn btn-outline-primary">
+                <i class="fas fa-print me-1"></i> Print All Hall Tickets
+            </button>
+        </div>
+
+        {% for student_group in tickets|groupby('roll_number') %}
+        {% set student = student_group.list[0] %}
+        <div class="card shadow-sm mb-4 hall-ticket-card">
+            <!-- University Header -->
+            <div class="card-header bg-light py-3 border-bottom hall-ticket-header text-center position-relative">
+                <div class="d-flex justify-content-between align-items-center px-2">
+                    <div class="text-start">
+                        <i class="fas fa-university fa-2x text-primary"></i>
+                    </div>
+                    <div class="text-center flex-grow-1">
+                        <h4 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">National Institute of Technology</h4>
+                        <div class="text-muted small fw-semibold">OFFICE OF THE CONTROLLER OF EXAMINATIONS</div>
+                        <h5 class="fw-bold text-primary mt-2 mb-0">HALL TICKET / ADMIT CARD</h5>
+                    </div>
+                    <div class="text-end no-print">
+                        <button onclick="window.print()" class="btn btn-sm btn-outline-secondary" title="Print this Hall Ticket">
+                            <i class="fas fa-print"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4 hall-ticket-watermark">
+                <!-- Exam Session Badge -->
+                <div class="alert alert-light border py-2 px-3 mb-4 text-center">
+                    <span class="text-muted text-uppercase small fw-bold">Examination Session:</span>
+                    <strong class="text-dark ms-2">{{ student.session_name }}</strong>
+                </div>
+
+                <!-- Student Metadata Grid -->
+                <div class="row g-3 mb-4 p-3 bg-light rounded border">
+                    <div class="col-md-3 col-6">
+                        <div class="ticket-label">Student Name</div>
+                        <div class="ticket-value">{{ student.student_name }}</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="ticket-label">Roll Number</div>
+                        <div class="ticket-value font-monospace text-primary">{{ student.roll_number }}</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="ticket-label">Programme</div>
+                        <div class="ticket-value">{{ student.programme_name }}</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="ticket-label">Email Address</div>
+                        <div class="ticket-value small">{{ student.email }}</div>
+                    </div>
+                </div>
+
+                <!-- Scheduled Exams Table -->
+                <h6 class="fw-bold text-dark mb-2">
+                    <i class="fas fa-calendar-days me-1 text-primary"></i>Scheduled Examinations
+                </h6>
+                <div class="table-responsive mb-3">
+                    <table class="table table-bordered align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 50px;" class="text-center">#</th>
+                                <th style="width: 120px;">Course Code</th>
+                                <th>Course Name</th>
+                                <th style="width: 130px;">Date</th>
+                                <th style="width: 160px;">Time</th>
+                                <th style="width: 120px;">Room</th>
+                                <th style="width: 140px;">Building</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for exam in student_group.list %}
+                            <tr>
+                                <td class="text-center text-muted fw-bold">{{ loop.index }}</td>
+                                <td class="fw-bold font-monospace">{{ exam.course_code }}</td>
+                                <td class="fw-semibold">{{ exam.course_name }}</td>
+                                <td>
+                                    {% if exam.exam_date %}
+                                        <i class="far fa-calendar-alt text-muted me-1"></i>{{ exam.exam_date }}
+                                    {% else %}
+                                        <span class="badge bg-warning-subtle text-warning">TBA</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if exam.start_time and exam.end_time %}
+                                        <i class="far fa-clock text-muted me-1"></i>{{ exam.start_time }} - {{ exam.end_time }}
+                                    {% else %}
+                                        <span class="badge bg-warning-subtle text-warning">TBA</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if exam.room_number %}
+                                        <strong>{{ exam.room_number }}</strong>
+                                    {% else %}
+                                        <span class="badge bg-secondary-subtle text-secondary">TBA</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ exam.building or 'TBA' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Instructions & Footer -->
+                <div class="border-top pt-3 mt-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <p class="small text-muted mb-1">
+                                <i class="fas fa-circle-exclamation me-1 text-warning"></i>
+                                <strong>Instructions:</strong> Candidates must produce this admit card along with an institute identity card. Electronic devices are strictly prohibited.
+                            </p>
+                            <p class="small text-muted fst-italic mb-0">
+                                This is a computer-generated hall ticket. No signature is required.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-md-end text-center mt-3 mt-md-0">
+                            <div class="text-muted small fw-bold">CONTROLLER OF EXAMINATIONS</div>
+                            <div class="fw-semibold small text-primary">National Institute of Technology</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% elif tickets is defined %}
+        <!-- Tickets was queried but returned empty -->
+        <div class="card shadow-sm border-0 py-5 text-center text-muted">
+            <div class="card-body">
+                <i class="fas fa-file-circle-xmark fa-3x mb-3 text-secondary"></i>
+                <h5 class="fw-bold">No Hall Tickets Found</h5>
+                <p class="text-muted mb-0">No registered exams or schedules matching the selected criteria.</p>
+            </div>
+        </div>
+    {% else %}
+        <!-- Initial landing state before filter submitted -->
+        <div class="card shadow-sm border-0 py-5 text-center text-muted">
+            <div class="card-body">
+                <i class="fas fa-id-card fa-3x mb-3 text-primary opacity-50"></i>
+                <h5 class="fw-bold text-dark">Ready to Generate Hall Tickets</h5>
+                <p class="text-muted mb-0">Select an examination session above and click "Generate" to view printable admit cards.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

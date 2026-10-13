@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}Marks Entry - ExamPro{% endblock %}
+{% block page_title %}Marks Entry{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Enter Marks Form Card -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="card-title mb-0 fw-bold text-primary">
+                <i class="fas fa-marker me-2"></i>Enter Student Marks
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="POST" action="{{ url_for('marks') }}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="registration_id" class="form-label fw-semibold">Student Registration <span class="text-danger">*</span></label>
+                        <select class="form-select" id="registration_id" name="registration_id" required {% if not unmarked_registrations %}disabled{% endif %}>
+                            {% if unmarked_registrations %}
+                                <option value="" disabled selected>Select Registration to Grade</option>
+                                {% for r in unmarked_registrations %}
+                                <option value="{{ r.registration_id }}">
+                                    {{ r.roll_number }} - {{ r.student_name or r.name }} | {{ r.course_code }} - {{ r.course_name }} | {{ r.session_name }}
+                                </option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="" disabled selected>All registrations have marks</option>
+                            {% endif %}
+                        </select>
+                        {% if not unmarked_registrations %}
+                        <div class="form-text text-muted">
+                            <i class="fas fa-info-circle me-1 text-info"></i> All registered students currently have marks entered.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="marks_obtained" class="form-label fw-semibold">Marks Obtained <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" min="0" max="100" class="form-control" id="marks_obtained" name="marks_obtained" placeholder="0-100" required {% if not unmarked_registrations %}disabled{% endif %}>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="max_marks" class="form-label fw-semibold">Maximum Marks <span class="text-danger">*</span></label>
+                        <input type="number" min="1" class="form-control" id="max_marks" name="max_marks" value="100" required {% if not unmarked_registrations %}disabled{% endif %}>
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <button type="submit" class="btn btn-primary px-4" {% if not unmarked_registrations %}disabled{% endif %}>
+                            <i class="fas fa-save me-1"></i> Save Marks
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Marks Table Card -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="fas fa-list-check me-2"></i>Recorded Marks
+            </h5>
+            <span class="badge bg-primary rounded-pill px-3 py-2">
+                {{ marks|length if marks else 0 }} Total
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="ps-4" style="width: 50px;">#</th>
+                            <th scope="col">Roll Number</th>
+                            <th scope="col">Student Name</th>
+                            <th scope="col">Course</th>
+                            <th scope="col">Session</th>
+                            <th scope="col" class="text-center">Marks Obtained</th>
+                            <th scope="col" class="text-center">Max Marks</th>
+                            <th scope="col" style="min-width: 170px;">Percentage</th>
+                            <th scope="col" class="text-end pe-4" style="width: 110px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if marks %}
+                            {% for m in marks %}
+                            {% set pct = (m.marks_obtained / m.max_marks * 100) if m.max_marks and m.max_marks > 0 else 0 %}
+                            <tr>
+                                <td class="ps-4 fw-bold text-muted">{{ loop.index }}</td>
+                                <td>
+                                    <span class="badge bg-light text-primary border font-monospace">{{ m.roll_number }}</span>
+                                </td>
+                                <td class="fw-semibold text-dark">{{ m.student_name }}</td>
+                                <td>
+                                    <div class="fw-semibold">{{ m.course_code }}</div>
+                                    <small class="text-muted">{{ m.course_name }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ m.session_name }}</span>
+                                </td>
+                                <td class="text-center fw-bold text-dark">
+                                    {{ m.marks_obtained }}
+                                </td>
+                                <td class="text-center text-muted">
+                                    {{ m.max_marks }}
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 8px;">
+                                            <div class="progress-bar {% if pct >= 40 %}bg-success{% else %}bg-danger{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ pct if pct <= 100 else 100 }}%;" 
+                                                 aria-valuenow="{{ pct }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <span class="small fw-bold {% if pct >= 40 %}text-success{% else %}text-danger{% endif %}" style="min-width: 48px;">
+                                            {{ pct|round(1) }}%
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a href="{{ url_for('delete_mark', id=m.mark_id) }}" 
+                                       class="btn btn-sm btn-outline-danger" 
+                                       onclick="return confirm('Are you sure you want to delete this mark entry?')"
+                                       title="Delete Mark">
+                                        <i class="fas fa-trash-alt me-1"></i> Delete
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5 text-muted">
+                                    <i class="fas fa-file-invoice fa-3x mb-3 text-secondary d-block"></i>
+                                    <h6 class="fw-bold">No marks entries found</h6>
+                                    <p class="small mb-0">Record exam marks for registered students using the form above.</p>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

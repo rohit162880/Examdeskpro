@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports & Analytics - ExamPro{% endblock %}
+{% block page_title %}Reports & Analytics{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- 4. Conflict Detection Card (Placed at top for immediate attention if conflicts exist) -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="fas fa-triangle-exclamation me-2 text-warning"></i>Schedule Conflict Detection
+            </h5>
+            {% if conflicts %}
+                <span class="badge bg-danger rounded-pill px-3 py-2">
+                    {{ conflicts|length }} Conflict{{ 's' if conflicts|length > 1 else '' }} Found
+                </span>
+            {% else %}
+                <span class="badge bg-success rounded-pill px-3 py-2">
+                    <i class="fas fa-shield-check me-1"></i>0 Conflicts
+                </span>
+            {% endif %}
+        </div>
+        <div class="card-body p-4">
+            {% if conflicts %}
+                <div class="alert alert-danger border-danger border-2 mb-3" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle fa-2x me-3 text-danger"></i>
+                        <div>
+                            <h6 class="alert-heading fw-bold mb-1">Attention Required: Overlapping Schedules Detected!</h6>
+                            <p class="mb-0 small">The following exams share the same room slot or have double-booked invigilators. Please resolve these conflicts immediately.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive border border-danger rounded">
+                    <table class="table table-hover table-striped align-middle mb-0">
+                        <thead class="table-danger text-dark">
+                            <tr>
+                                <th scope="col" class="ps-3" style="width: 50px;">#</th>
+                                <th scope="col">Conflict Type</th>
+                                <th scope="col">Room / Resource</th>
+                                <th scope="col">Exam Date</th>
+                                <th scope="col">Time Window</th>
+                                <th scope="col">Conflict Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in conflicts %}
+                            <tr>
+                                <td class="ps-3 fw-bold text-danger">{{ loop.index }}</td>
+                                <td>
+                                    <span class="badge bg-danger">
+                                        {{ c.type or c.conflict_type or 'Double Booking' }}
+                                    </span>
+                                </td>
+                                <td class="fw-bold">{{ c.room_number or c.room or '-' }}</td>
+                                <td>{{ c.exam_date or c.date or '-' }}</td>
+                                <td>{{ c.time or c.slot or '-' }}</td>
+                                <td class="text-danger fw-semibold">
+                                    {{ c.message or c.details or c }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-success border-0 mb-0 d-flex align-items-center py-3">
+                    <i class="fas fa-check-circle fa-2x text-success me-3"></i>
+                    <div>
+                        <h6 class="mb-0 fw-bold text-success">No scheduling conflicts detected!</h6>
+                        <small class="text-muted">All exam rooms, time slots, and invigilator assignments are cleanly separated without overlaps.</small>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- 1. Pass Percentage Report Card -->
+        <div class="col-lg-7 col-12">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 fw-bold text-dark">
+                        <i class="fas fa-chart-line me-2 text-primary"></i>Pass Percentage Report
+                    </h5>
+                    <span class="badge bg-primary rounded-pill px-3 py-2">
+                        {{ pass_percentage|length if pass_percentage else 0 }} Courses
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" class="ps-3">Session</th>
+                                    <th scope="col">Course Code</th>
+                                    <th scope="col" class="text-center">Total Students</th>
+                                    <th scope="col" class="text-center">Passed</th>
+                                    <th scope="col" class="text-center">Failed</th>
+                                    <th scope="col" style="min-width: 170px;">Pass %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if pass_percentage %}
+                                    {% for p in pass_percentage %}
+                                    {% set total = p.total if p.total else 0 %}
+                                    {% set passed = p.passed if p.passed else 0 %}
+                                    {% set failed = p.failed if p.failed is defined else (total - passed) %}
+                                    {% set pass_rate = (passed / total * 100) if total > 0 else 0 %}
+                                    <tr>
+                                        <td class="ps-3">
+                                            <span class="badge bg-light text-dark border">{{ p.session_name }}</span>
+                                        </td>
+                                        <td class="fw-bold font-monospace">{{ p.course_code }}</td>
+                                        <td class="text-center fw-semibold">{{ total }}</td>
+                                        <td class="text-center text-success fw-bold">{{ passed }}</td>
+                                        <td class="text-center text-danger fw-bold">{{ failed }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1" style="height: 8px;">
+                                                    <div class="progress-bar {% if pass_rate >= 60 %}bg-success{% elif pass_rate >= 40 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ pass_rate if pass_rate <= 100 else 100 }}%;" 
+                                                         aria-valuenow="{{ pass_rate }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                                <span class="small fw-bold {% if pass_rate >= 60 %}text-success{% elif pass_rate >= 40 %}text-warning{% else %}text-danger{% endif %}" style="min-width: 48px;">
+                                                    {{ pass_rate|round(1) }}%
+                                                </span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            <i class="fas fa-chart-pie fa-2x mb-2 text-secondary d-block"></i>
+                                            <span class="fw-semibold">No published exam results available for pass rate calculation.</span>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Grade Distribution Card -->
+        <div class="col-lg-5 col-12">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 fw-bold text-dark">
+                        <i class="fas fa-chart-pie me-2 text-info"></i>Grade Distribution
+                    </h5>
+                    <span class="badge bg-info text-dark rounded-pill px-3 py-2">
+                        {{ grade_distribution|length if grade_distribution else 0 }} Entries
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" class="ps-3">Session</th>
+                                    <th scope="col" class="text-center" style="width: 100px;">Grade</th>
+                                    <th scope="col" class="text-center" style="width: 120px;">Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if grade_distribution %}
+                                    {% for g in grade_distribution %}
+                                    <tr>
+                                        <td class="ps-3">
+                                            <span class="badge bg-light text-dark border">{{ g.session_name }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if g.grade in ['O', 'A+'] %}
+                                                <span class="badge bg-success px-3 py-1 fs-6 fw-bold">{{ g.grade }}</span>
+                                            {% elif g.grade in ['A', 'B+'] %}
+                                                <span class="badge bg-primary px-3 py-1 fs-6 fw-bold">{{ g.grade }}</span>
+                                            {% elif g.grade in ['B', 'C'] %}
+                                                <span class="badge bg-warning text-dark px-3 py-1 fs-6 fw-bold">{{ g.grade }}</span>
+                                            {% elif g.grade == 'F' %}
+                                                <span class="badge bg-danger px-3 py-1 fs-6 fw-bold">{{ g.grade }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary px-3 py-1 fs-6 fw-bold">{{ g.grade }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-dark-subtle text-dark px-3 py-1 fw-bold fs-6 font-monospace">
+                                                {{ g.count }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center py-4 text-muted">
+                                            <i class="fas fa-award fa-2x mb-2 text-secondary d-block"></i>
+                                            <span class="fw-semibold">No grade distribution records found.</span>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Room Utilization Card -->
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 fw-bold text-dark">
+                        <i class="fas fa-building-circle-check me-2 text-success"></i>Room Utilization Analysis
+                    </h5>
+                    <span class="badge bg-success rounded-pill px-3 py-2">
+                        {{ room_utilization|length if room_utilization else 0 }} Rooms
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" class="ps-4" style="width: 60px;">#</th>
+                                    <th scope="col">Room Number</th>
+                                    <th scope="col">Building</th>
+                                    <th scope="col" class="text-center">Seating Capacity</th>
+                                    <th scope="col" class="text-center">Total Exams Scheduled</th>
+                                    <th scope="col" style="min-width: 180px;">Utilization Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if room_utilization %}
+                                    {% for r in room_utilization %}
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-muted">{{ loop.index }}</td>
+                                        <td>
+                                            <i class="fas fa-door-open text-muted me-1"></i>
+                                            <strong class="text-dark">{{ r.room_number }}</strong>
+                                        </td>
+                                        <td>{{ r.building }}</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-secondary border px-3 py-1">
+                                                <i class="fas fa-users me-1"></i>{{ r.capacity }} seats
+                                            </span>
+                                        </td>
+                                        <td class="text-center fw-bold text-dark">
+                                            {{ r.total_exams }}
+                                        </td>
+                                        <td>
+                                            {% if r.total_exams > 0 %}
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="badge bg-success-subtle text-success border border-success px-2 py-1">
+                                                        <i class="fas fa-check me-1"></i>In Use ({{ r.total_exams }} exam{{ 's' if r.total_exams > 1 else '' }})
+                                                    </span>
+                                                </div>
+                                            {% else %}
+                                                <span class="badge bg-secondary-subtle text-secondary px-2 py-1">
+                                                    <i class="fas fa-minus me-1"></i>Available (0 exams)
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            <i class="fas fa-building fa-2x mb-2 text-secondary d-block"></i>
+                                            <span class="fw-semibold">No room utilization data available.</span>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}SQL Table Viewer - ExamPro{% endblock %}
+{% block page_title %}SQL Table Viewer{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Top Section: Database Tables List -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="fas fa-database me-2 text-primary"></i>Database Tables
+            </h5>
+            <span class="badge bg-primary rounded-pill px-3 py-2">
+                {{ tables|length if tables else 0 }} Tables
+            </span>
+        </div>
+        <div class="card-body p-4">
+            <p class="text-muted small mb-3">Click on any table below to inspect its schema definition and sample rows:</p>
+            <div class="d-flex flex-wrap gap-2">
+                {% if tables %}
+                    {% for t in tables %}
+                    <a href="{{ url_for('sql_table_detail', table_name=t) }}" 
+                       class="btn {% if selected_table == t %}btn-primary shadow-sm{% else %}btn-outline-primary{% endif %} px-3 py-2 text-start">
+                        <i class="fas fa-table me-1"></i> {{ t }}
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted mb-0">No tables discovered in the database.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if selected_table %}
+    <!-- Table Structure Info (DESCRIBE) Card -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="fas fa-sitemap me-2 text-info"></i>Schema Structure: <span class="text-primary font-monospace">{{ selected_table }}</span>
+            </h5>
+            <span class="badge bg-info text-dark rounded-pill px-3 py-2">
+                {{ columns|length if columns else 0 }} Columns
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="ps-4">Field</th>
+                            <th scope="col">Type</th>
+                            <th scope="col" class="text-center">Null</th>
+                            <th scope="col" class="text-center">Key</th>
+                            <th scope="col">Default</th>
+                            <th scope="col" class="pe-4">Extra</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if columns %}
+                            {% for col in columns %}
+                            <tr>
+                                <td class="ps-4 font-monospace fw-bold text-dark">
+                                    {{ col.Field or col.field }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace">
+                                        {{ col.Type or col.type }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    {% if (col.Null or col.null) == 'YES' %}
+                                        <span class="badge bg-light text-muted border">YES</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary-subtle text-secondary">NO</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% set key_val = col.Key or col.key %}
+                                    {% if key_val == 'PRI' %}
+                                        <span class="badge bg-warning text-dark"><i class="fas fa-key me-1"></i>PRI</span>
+                                    {% elif key_val == 'UNI' %}
+                                        <span class="badge bg-info text-dark">UNI</span>
+                                    {% elif key_val == 'MUL' %}
+                                        <span class="badge bg-light text-dark border">MUL</span>
+                                    {% elif key_val %}
+                                        <span class="badge bg-secondary">{{ key_val }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="font-monospace small">
+                                    {% set def_val = col.Default or col.default %}
+                                    {% if def_val is not none %}
+                                        {{ def_val }}
+                                    {% else %}
+                                        <span class="text-muted fst-italic">NULL</span>
+                                    {% endif %}
+                                </td>
+                                <td class="pe-4 text-muted small">
+                                    {{ col.Extra or col.extra or '-' }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    No schema columns found.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Records Card -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="fas fa-table-list me-2 text-success"></i>Table Data: <span class="text-primary font-monospace">{{ selected_table }}</span>
+            </h5>
+            <span class="badge bg-success rounded-pill px-3 py-2">
+                {{ rows|length if rows else 0 }} Rows Loaded (Limit 100)
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="ps-3 text-muted" style="width: 50px;">#</th>
+                            {% for col in columns %}
+                            <th scope="col" class="font-monospace">{{ col.Field or col.field }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if rows %}
+                            {% for row in rows %}
+                            <tr>
+                                <td class="ps-3 fw-bold text-muted small">{{ loop.index }}</td>
+                                {% for col in columns %}
+                                {% set field_name = col.Field or col.field %}
+                                <td>
+                                    {% set val = row[field_name] %}
+                                    {% if val is none %}
+                                        <span class="text-muted fst-italic small">NULL</span>
+                                    {% elif val is sameas true %}
+                                        <span class="badge bg-success">TRUE</span>
+                                    {% elif val is sameas false %}
+                                        <span class="badge bg-secondary">FALSE</span>
+                                    {% else %}
+                                        {{ val }}
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="{{ (columns|length + 1) if columns else 1 }}" class="text-center py-5 text-muted">
+                                    <i class="fas fa-inbox fa-3x mb-3 text-secondary d-block"></i>
+                                    <h6 class="fw-bold">No data in this table</h6>
+                                    <p class="small mb-0">The table has 0 rows or records have not yet been inserted.</p>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No Table Selected State -->
+    <div class="card shadow-sm border-0 py-5 text-center text-muted">
+        <div class="card-body">
+            <i class="fas fa-database fa-3x mb-3 text-primary opacity-50"></i>
+            <h5 class="fw-bold text-dark">Select a Database Table</h5>
+            <p class="text-muted mb-0">Choose one of the database tables listed above to inspect its columns and view its records.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

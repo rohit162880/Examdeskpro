@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - ExamPro{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome Banner -->
+<div class="welcome-banner">
+  <h2 class="fw-bold mb-2">Welcome to ExamPro</h2>
+  <p class="mb-1">Examination Scheduling and Result Processing System</p>
+  <div class="sub-text">Project 24 - DBMS Course Assignment</div>
+</div>
+
+<!-- Stats Grid - Row 1 -->
+<div class="row g-3 mb-4">
+  <!-- Programmes -->
+  <div class="col-lg col-md-4 col-6">
+    <div class="card stat-card border-primary">
+      <div class="stat-icon">
+        <i class="fa-solid fa-graduation-cap"></i>
+      </div>
+      <div class="stat-number">
+        {{ stats.programmes if stats and stats.programmes is defined else 0 }}
+      </div>
+      <div class="stat-label">Programmes</div>
+    </div>
+  </div>
+
+  <!-- Courses -->
+  <div class="col-lg col-md-4 col-6">
+    <div class="card stat-card border-success">
+      <div class="stat-icon">
+        <i class="fa-solid fa-book"></i>
+      </div>
+      <div class="stat-number">
+        {{ stats.courses if stats and stats.courses is defined else 0 }}
+      </div>
+      <div class="stat-label">Courses</div>
+    </div>
+  </div>
+
+  <!-- Students -->
+  <div class="col-lg col-md-4 col-6">
+    <div class="card stat-card border-info">
+      <div class="stat-icon">
+        <i class="fa-solid fa-users"></i>
+      </div>
+      <div class="stat-number">
+        {{ stats.students if stats and stats.students is defined else 0 }}
+      </div>
+      <div class="stat-label">Students</div>
+    </div>
+  </div>
+
+  <!-- Rooms -->
+  <div class="col-lg col-md-4 col-6">
+    <div class="card stat-card border-warning">
+      <div class="stat-icon">
+        <i class="fa-solid fa-building"></i>
+      </div>
+      <div class="stat-number">
+        {{ stats.rooms if stats and stats.rooms is defined else 0 }}
+      </div>
+      <div class="stat-label">Rooms</div>
+    </div>
+  </div>
+
+  <!-- Invigilators -->
+  <div class="col-lg col-md-4 col-6">
+    <div class="card stat-card border-danger">
+      <div class="stat-icon">
+        <i class="fa-solid fa-user-tie"></i>
+      </div>
+      <div class="stat-number">
+        {{ stats.invigilators if stats and stats.invigilators is defined else 0 }}
+      </div>
+      <div class="stat-label">Invigilators</div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Grid - Row 2 -->
+<div class="row g-3 mb-4">
+  <!-- Exam Sessions -->
+  <div class="col-lg col-md-4 col-6">
+    <div class="card stat-card border-secondary">
+      <div class="stat-icon">
+        <i class="fa-solid fa-calendar"></i>
+      </div>
+      <div class="stat-number">
+        {{ stats.exam_sessions if stats and stats.exam_sessions is defined else 0 }}
+      </div>
+      <div class="stat-label">Exam Sessions</div>
+    </div>
+  </div>
+
+  <!-- Schedules -->
+  <div class="col-lg col-md-4 col-6">
+    <div class="card stat-card border-primary">
+      <div class="stat-icon">
+        <i class="fa-solid fa-calendar-check"></i>
+      </div>
+      <div class="stat-number">
+        {{ stats.schedules if stats and stats.schedules is defined else 0 }}
+      </div>
+      <div class="stat-label">Schedules</div>
+    </div>
+  </div>
+
+  <!-- Registrations -->
+  <div class="col-lg col-md-4 col-6">
+    <div class="card stat-card border-success">
+      <div class="stat-icon">
+        <i class="fa-solid fa-clipboard-list"></i>
+      </div>
+      <div class="stat-number">
+        {{ stats.registrations if stats and stats.registrations is defined else 0 }}
+      </div>
+      <div class="stat-label">Registrations</div>
+    </div>
+  </div>
+
+  <!-- Marks Entered -->
+  <div class="col-lg col-md-4 col-6">
+    <div class="card stat-card border-info">
+      <div class="stat-icon">
+        <i class="fa-solid fa-pencil"></i>
+      </div>
+      <div class="stat-number">
+        {{ stats.marks if stats and stats.marks is defined else 0 }}
+      </div>
+      <div class="stat-label">Marks Entered</div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="col-lg col-md-4 col-6">
+    <div class="card stat-card border-warning">
+      <div class="stat-icon">
+        <i class="fa-solid fa-chart-bar"></i>
+      </div>
+      <div class="stat-number">
+        {{ stats.results if stats and stats.results is defined else 0 }}
+      </div>
+      <div class="stat-label">Results</div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions Section -->
+<div class="card">
+  <div class="card-header d-flex align-items-center">
+    <i class="fa-solid fa-bolt text-warning me-2"></i>
+    <span>Quick Actions</span>
+  </div>
+  <div class="card-body">
+    <div class="d-flex flex-wrap gap-3">
+      <a href="{{ url_for('schedules') }}" class="btn btn-primary d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-calendar-check"></i>
+        <span>Create Schedule</span>
+      </a>
+      <a href="{{ url_for('marks') }}" class="btn btn-success d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-pencil"></i>
+        <span>Enter Marks</span>
+      </a>
+      <a href="{{ url_for('results') }}" class="btn btn-info text-white d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-chart-bar"></i>
+        <span>View Results</span>
+      </a>
+      <a href="{{ url_for('hall_tickets') }}" class="btn btn-warning text-dark d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-id-card"></i>
+        <span>Generate Hall Tickets</span>
+      </a>
+      <a href="{{ url_for('reports') }}" class="btn btn-secondary d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-file-lines"></i>
+        <span>View Reports</span>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
