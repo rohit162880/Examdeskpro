@@ -12,6 +12,11 @@ This platform solves these institutional bottlenecks by automating **exam timeta
 
 ---
 
+## Python + SQLite edition
+
+For a lightweight local run with no package installs or MySQL server, see the [Examwise Python + SQLite edition](examwise-standalone/README.md). It is kept alongside this Flask + MySQL version.
+
+---
 ## 🚀 Key Features
 
 ### 1. Master Data Management
